@@ -48,7 +48,7 @@ function registerRoleRoutes() {
         try {
           const pool = db.getPool();
           const { rows } = pool
-            ? await pool.query('SELECT flight_no, origin, destination, status FROM flights ORDER BY id LIMIT 30')
+            ? await pool.query('SELECT flight_no, origin, destination, status FROM flights ORDER BY id LIMIT 50')
             : { rows: [] };
           res.json({ flights: rows, count: rows.length });
         } catch (err) {
@@ -292,3 +292,4 @@ async function bootstrap() {
 }
 
 bootstrap();
+
