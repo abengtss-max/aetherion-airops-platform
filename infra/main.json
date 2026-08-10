@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.46.1.21595",
-      "templateHash": "16655203015586289250"
+      "templateHash": "13058036055059645836"
     },
     "description": "Aetherion AirOps - Azure SRE Agent MicroHack environment. Provisions AKS, ACR, APIM, PostgreSQL Flexible Server, Redis, Log Analytics, Application Insights and Managed Grafana. Teaching environment only - not production hardened."
   },
@@ -80,6 +80,13 @@
       "defaultValue": "Standard_D4s_v5",
       "metadata": {
         "description": "VM size for AKS worker nodes."
+      }
+    },
+    "kubernetesVersion": {
+      "type": "string",
+      "defaultValue": "1.33",
+      "metadata": {
+        "description": "Kubernetes version for AKS. The deploy script resolves the current stable (default) GA version at runtime and passes it in, so this literal is only a fallback."
       }
     },
     "apimSkuName": {
@@ -246,7 +253,7 @@
       },
       "properties": {
         "dnsPrefix": "[format('{0}-aks', parameters('namePrefix'))]",
-        "kubernetesVersion": "1.33",
+        "kubernetesVersion": "[parameters('kubernetesVersion')]",
         "enableRBAC": true,
         "agentPoolProfiles": [
           {
