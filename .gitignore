@@ -3,3 +3,6 @@ npm-debug.log*
 *.log
 .env
 .DS_Store
+
+# Compiled Bicep ARM output
+infra/main.json
