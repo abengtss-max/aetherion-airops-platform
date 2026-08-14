@@ -16,7 +16,11 @@ app.use(express.json());
 
 let started = Date.now();
 let requestCount = 0;
-app.use((req, res, next) => { requestCount++; next(); });
+
+app.use((req, res, next) => {
+  requestCount++;
+  next();
+});
 
 // ---- Health probes -------------------------------------------------------
 app.get('/health/live', (req, res) => {
@@ -48,7 +52,7 @@ function registerRoleRoutes() {
         try {
           const pool = db.getPool();
           const { rows } = pool
-            ? await pool.query('SELECT flight_no, origin, destination, status FROM flights ORDER BY id LIMIT 50')
+            ? await pool.query('SELECT flight_no, origin, destination, status FROM flights ORDER BY id LIMIT 30')
             : { rows: [] };
           res.json({ flights: rows, count: rows.length });
         } catch (err) {
@@ -62,7 +66,11 @@ function registerRoleRoutes() {
         try {
           const pool = db.getPool();
           const { rows } = await pool.query(
-            'SELECT flight_no, crew_member, role, assigned FROM crew_roster ORDER BY id LIMIT 40'
+            `SELECT flight_no, crew_member, role, assigned
+               FROM crew_roster
+              WHERE assigned = true AND role <> 'Cabin Crew'
+              ORDER BY flight_no, crew_member
+              LIMIT 40`
           );
           res.json({ roster: rows, count: rows.length });
         } catch (err) {
@@ -142,8 +150,8 @@ function registerGatewayRoutes() {
   const CORE = { booking: 'SEV-1', 'flight-ops': 'SEV-1' };
 
   // Probe each service's REAL user-facing endpoint (not just readiness) so the
-  // Ops Center reflects genuine request latency and status, not just pod
-  // readiness.
+  // Ops Center reflects what customers actually experience, not just pod state.
+  // This measures genuine request latency and status.
   const PROBES = {
     'flight-ops': { method: 'GET', path: '/api/flights' },
     'crew-scheduling': { method: 'GET', path: '/api/crew' },
@@ -171,14 +179,15 @@ function registerGatewayRoutes() {
   }
 
   // Derive executive/business/operational signals from the REAL probe results so
-  // every panel reflects live service health.
+  // every panel reflects the live state of the platform.
   function deriveSignals(health) {
     const values = Object.values(health);
     const total = values.length || 1;
     const down = values.filter((h) => !h.ok).length;
-    const slow = values.filter((h) => h.ok && h.latencyMs > 1500).length;
+    // Aetherion's latency budget for a passenger-facing path is 400ms.
+    const slow = values.filter((h) => h.ok && h.latencyMs > 400).length;
 
-    const score = Math.min(100, down * 32 + slow * 14 + (down + slow ? 6 : 4));
+    const score = Math.min(100, down * 32 + slow * 20 + (down + slow ? 6 : 4));
     const level = score >= 60 ? 'HIGH' : score >= 25 ? 'MEDIUM' : 'LOW';
 
     const latencies = values.map((h) => h.latencyMs || 0).sort((a, b) => a - b);
@@ -239,10 +248,11 @@ function registerGatewayRoutes() {
   });
 
 
-  // Reverse-proxy the downstream domain endpoints so external traffic (the load
-  // generator via APIM, and operators hitting the gateway directly) reaches the
-  // role services. Without this the gateway 404s these paths and the load never
-  // exercises the downstream services.
+  // Reverse-proxy the downstream domain endpoints so external traffic (the k6
+  // load generator via APIM, and operators hitting the gateway directly) reaches
+  // the role services. Without this the gateway 404s these paths and the load
+  // never exercises the downstream services, so degradations produce no
+  // signal under load.
   const PROXY_ROUTES = [
     { method: 'get', path: '/api/flights', target: services['flight-ops'] },
     { method: 'get', path: '/api/crew', target: services['crew-scheduling'] },
@@ -292,4 +302,3 @@ async function bootstrap() {
 }
 
 bootstrap();
-
