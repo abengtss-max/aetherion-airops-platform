@@ -22,6 +22,7 @@ data:
   PGPORT: "5432"
   REDIS_PORT: "6379"
   REDIS_TLS: "false"
+  REDIS_HOST: "redis"
   PG_POOL_MAX: "5"
 ---
 # ---------------- redis (in-cluster cache) ----------------
@@ -77,8 +78,8 @@ spec:
             - { name: ROLE, value: "gateway" }
             - name: APPLICATIONINSIGHTS_CONNECTION_STRING
               valueFrom: { secretKeyRef: { name: aetherion-secrets, key: APPLICATIONINSIGHTS_CONNECTION_STRING } }
-          readinessProbe: { httpGet: { path: /health/ready, port: 8080 }, initialDelaySeconds: 5, periodSeconds: 10 }
-          livenessProbe: { httpGet: { path: /health/live, port: 8080 }, initialDelaySeconds: 10, periodSeconds: 10 }
+          readinessProbe: { httpGet: { path: /health/ready, port: 8080 }, initialDelaySeconds: 5, periodSeconds: 10, timeoutSeconds: 5, failureThreshold: 6 }
+          livenessProbe: { httpGet: { path: /health/live, port: 8080 }, initialDelaySeconds: 10, periodSeconds: 10, timeoutSeconds: 5, failureThreshold: 6 }
           resources: { requests: { cpu: "100m", memory: "128Mi" }, limits: { cpu: "500m", memory: "256Mi" } }
 ---
 apiVersion: v1
@@ -103,6 +104,7 @@ spec:
   # The flight board publishes a single authoritative view per station, so two
   # revisions must never serve at the same time. Old pods are stopped before new
   # ones start, which makes a failed release immediately customer-visible.
+  strategy: { type: Recreate }
   selector: { matchLabels: { app: flight-ops } }
   template:
     metadata:
@@ -119,8 +121,8 @@ spec:
             - { name: PGUSER, valueFrom: { secretKeyRef: { name: aetherion-secrets, key: PGUSER } } }
             - { name: PGPASSWORD, valueFrom: { secretKeyRef: { name: aetherion-secrets, key: PGPASSWORD } } }
             - { name: APPLICATIONINSIGHTS_CONNECTION_STRING, valueFrom: { secretKeyRef: { name: aetherion-secrets, key: APPLICATIONINSIGHTS_CONNECTION_STRING } } }
-          readinessProbe: { httpGet: { path: /health/ready, port: 8080 }, initialDelaySeconds: 5, periodSeconds: 10 }
-          livenessProbe: { httpGet: { path: /health/live, port: 8080 }, initialDelaySeconds: 10, periodSeconds: 10 }
+          readinessProbe: { httpGet: { path: /health/ready, port: 8080 }, initialDelaySeconds: 5, periodSeconds: 10, timeoutSeconds: 5, failureThreshold: 6 }
+          livenessProbe: { httpGet: { path: /health/live, port: 8080 }, initialDelaySeconds: 10, periodSeconds: 10, timeoutSeconds: 5, failureThreshold: 6 }
           resources: { requests: { cpu: "100m", memory: "128Mi" }, limits: { cpu: "500m", memory: "256Mi" } }
 ---
 apiVersion: v1
@@ -155,8 +157,8 @@ spec:
             - { name: PGUSER, valueFrom: { secretKeyRef: { name: aetherion-secrets, key: PGUSER } } }
             - { name: PGPASSWORD, valueFrom: { secretKeyRef: { name: aetherion-secrets, key: PGPASSWORD } } }
             - { name: APPLICATIONINSIGHTS_CONNECTION_STRING, valueFrom: { secretKeyRef: { name: aetherion-secrets, key: APPLICATIONINSIGHTS_CONNECTION_STRING } } }
-          readinessProbe: { httpGet: { path: /health/ready, port: 8080 }, initialDelaySeconds: 5, periodSeconds: 10 }
-          livenessProbe: { httpGet: { path: /health/live, port: 8080 }, initialDelaySeconds: 10, periodSeconds: 10 }
+          readinessProbe: { httpGet: { path: /health/ready, port: 8080 }, initialDelaySeconds: 5, periodSeconds: 10, timeoutSeconds: 5, failureThreshold: 6 }
+          livenessProbe: { httpGet: { path: /health/live, port: 8080 }, initialDelaySeconds: 10, periodSeconds: 10, timeoutSeconds: 5, failureThreshold: 6 }
           resources: { requests: { cpu: "100m", memory: "128Mi" }, limits: { cpu: "500m", memory: "256Mi" } }
 ---
 apiVersion: v1
@@ -190,11 +192,10 @@ spec:
             - { name: PGHOST, valueFrom: { secretKeyRef: { name: aetherion-secrets, key: PGHOST } } }
             - { name: PGUSER, valueFrom: { secretKeyRef: { name: aetherion-secrets, key: PGUSER } } }
             - { name: PGPASSWORD, valueFrom: { secretKeyRef: { name: aetherion-secrets, key: PGPASSWORD } } }
-            - { name: REDIS_HOST, valueFrom: { secretKeyRef: { name: aetherion-secrets, key: REDIS_HOST } } }
             - { name: REDIS_PASSWORD, valueFrom: { secretKeyRef: { name: aetherion-secrets, key: REDIS_PASSWORD } } }
             - { name: APPLICATIONINSIGHTS_CONNECTION_STRING, valueFrom: { secretKeyRef: { name: aetherion-secrets, key: APPLICATIONINSIGHTS_CONNECTION_STRING } } }
-          readinessProbe: { httpGet: { path: /health/ready, port: 8080 }, initialDelaySeconds: 5, periodSeconds: 10 }
-          livenessProbe: { httpGet: { path: /health/live, port: 8080 }, initialDelaySeconds: 10, periodSeconds: 10 }
+          readinessProbe: { httpGet: { path: /health/ready, port: 8080 }, initialDelaySeconds: 5, periodSeconds: 10, timeoutSeconds: 5, failureThreshold: 6 }
+          livenessProbe: { httpGet: { path: /health/live, port: 8080 }, initialDelaySeconds: 10, periodSeconds: 10, timeoutSeconds: 5, failureThreshold: 6 }
           resources: { requests: { cpu: "100m", memory: "128Mi" }, limits: { cpu: "500m", memory: "256Mi" } }
 ---
 apiVersion: v1
@@ -225,8 +226,8 @@ spec:
           env:
             - { name: ROLE, value: "baggage" }
             - { name: APPLICATIONINSIGHTS_CONNECTION_STRING, valueFrom: { secretKeyRef: { name: aetherion-secrets, key: APPLICATIONINSIGHTS_CONNECTION_STRING } } }
-          readinessProbe: { httpGet: { path: /health/ready, port: 8080 }, initialDelaySeconds: 5, periodSeconds: 10 }
-          livenessProbe: { httpGet: { path: /health/live, port: 8080 }, initialDelaySeconds: 10, periodSeconds: 10 }
+          readinessProbe: { httpGet: { path: /health/ready, port: 8080 }, initialDelaySeconds: 5, periodSeconds: 10, timeoutSeconds: 5, failureThreshold: 6 }
+          livenessProbe: { httpGet: { path: /health/live, port: 8080 }, initialDelaySeconds: 10, periodSeconds: 10, timeoutSeconds: 5, failureThreshold: 6 }
           resources: { requests: { cpu: "50m", memory: "96Mi" }, limits: { cpu: "300m", memory: "192Mi" } }
 ---
 apiVersion: v1
@@ -261,8 +262,8 @@ spec:
             - { name: PGUSER, valueFrom: { secretKeyRef: { name: aetherion-secrets, key: PGUSER } } }
             - { name: PGPASSWORD, valueFrom: { secretKeyRef: { name: aetherion-secrets, key: PGPASSWORD } } }
             - { name: APPLICATIONINSIGHTS_CONNECTION_STRING, valueFrom: { secretKeyRef: { name: aetherion-secrets, key: APPLICATIONINSIGHTS_CONNECTION_STRING } } }
-          readinessProbe: { httpGet: { path: /health/ready, port: 8080 }, initialDelaySeconds: 5, periodSeconds: 10 }
-          livenessProbe: { httpGet: { path: /health/live, port: 8080 }, initialDelaySeconds: 10, periodSeconds: 10 }
+          readinessProbe: { httpGet: { path: /health/ready, port: 8080 }, initialDelaySeconds: 5, periodSeconds: 10, timeoutSeconds: 5, failureThreshold: 6 }
+          livenessProbe: { httpGet: { path: /health/live, port: 8080 }, initialDelaySeconds: 10, periodSeconds: 10, timeoutSeconds: 5, failureThreshold: 6 }
           resources: { requests: { cpu: "100m", memory: "128Mi" }, limits: { cpu: "400m", memory: "256Mi" } }
 ---
 apiVersion: v1
